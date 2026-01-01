@@ -1,5 +1,6 @@
 package me.jaypatelbond.popcorn
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,6 +14,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,6 +34,7 @@ import me.jaypatelbond.popcorn.ui.theme.TextSecondary
 /**
  * Main entry point of the Popcorn app.
  * Uses Hilt for dependency injection and Compose Navigation with bottom bar.
+ * Handles deep links from shared movie URLs.
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -40,19 +43,46 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Parse deep link movie ID if app was opened via deep link
+        val deepLinkMovieId = parseDeepLinkMovieId(intent)
+
         setContent {
             PopcornTheme {
-                MainApp()
+                MainApp(deepLinkMovieId = deepLinkMovieId)
             }
         }
+    }
+
+    /**
+     * Parse movie ID from deep link URI.
+     * Expected format: popcorn://movie/{movieId}
+     */
+    private fun parseDeepLinkMovieId(intent: Intent?): Int? {
+        if (intent?.action != Intent.ACTION_VIEW) return null
+        
+        val uri = intent.data ?: return null
+        if (uri.scheme != "popcorn" || uri.host != "movie") return null
+        
+        // Get the movie ID from the path (e.g., /123 -> 123)
+        return uri.lastPathSegment?.toIntOrNull()
     }
 }
 
 @Composable
-fun MainApp() {
+fun MainApp(deepLinkMovieId: Int? = null) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+
+    // Handle deep link navigation
+    LaunchedEffect(deepLinkMovieId) {
+        deepLinkMovieId?.let { movieId ->
+            navController.navigate(Screen.MovieDetails.createRoute(movieId)) {
+                // Don't add to back stack if we're navigating directly to details
+                launchSingleTop = true
+            }
+        }
+    }
 
     // Determine if bottom bar should be shown (hide on detail screens)
     val showBottomBar = currentDestination?.route in listOf(
