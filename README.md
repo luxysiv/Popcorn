@@ -77,7 +77,12 @@ app/
 
 ## 📸 Screenshots
 
-*Coming soon*
+<p align="center">
+  <img src="screenshots/home.png" width="200" alt="Home"/>
+  <img src="screenshots/details.png" width="200" alt="Details"/>
+  <img src="screenshots/search.png" width="200" alt="Search"/>
+  <img src="screenshots/saved.png" width="200" alt="Saved"/>
+</p>
 
 ## 📦 APK Download
 
