@@ -53,7 +53,7 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "🍿 Popcorn",
+                        text = "Popcorn",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = NetflixRed

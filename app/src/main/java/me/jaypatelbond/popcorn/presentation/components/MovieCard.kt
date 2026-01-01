@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -146,9 +147,12 @@ fun MovieCard(
                 }
             }
             
-            // Movie title
+            // Movie title - fixed height for consistent card sizes
             Column(
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier
+                    .padding(8.dp)
+                    .height(52.dp),
+                verticalArrangement = Arrangement.Top
             ) {
                 Text(
                     text = movie.title,
@@ -156,17 +160,16 @@ fun MovieCard(
                     fontWeight = FontWeight.Medium,
                     color = Color.White,
                     maxLines = 2,
+                    minLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 
-                movie.getReleaseYear()?.let { year ->
-                    Text(
-                        text = year,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                }
+                Text(
+                    text = movie.getReleaseYear() ?: "",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
             }
         }
     }

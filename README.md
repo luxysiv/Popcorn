@@ -1,6 +1,6 @@
 # 🍿 Popcorn - Movies Database App
 
-A feature-rich Android movie discovery app built with modern Android development practices for the Inshorts coding assignment.
+A feature-rich Android movie discovery app built with modern Android development practices.
 
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
@@ -87,10 +87,10 @@ app/
 
 - [x] Home page with trending and now playing movies
 - [x] Movie details page with full information
-- [ ] Bookmark movies and saved movies page
+- [x] Bookmark movies and saved movies page
 - [x] Offline support with Room database
-- [ ] Search with debounced input
-- [ ] Share movie with deep linking
+- [x] Search with debounced input
+- [x] Share movie with deep linking
 ---
 
 Built with ❤️ by [Jay Patel](https://github.com/jaypatelbond)

@@ -4,27 +4,127 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import me.jaypatelbond.popcorn.presentation.navigation.PopcornNavHost
+import me.jaypatelbond.popcorn.presentation.navigation.Screen
+import me.jaypatelbond.popcorn.presentation.navigation.bottomNavItems
+import me.jaypatelbond.popcorn.ui.theme.BackgroundBottomBar
+import me.jaypatelbond.popcorn.ui.theme.NetflixRed
 import me.jaypatelbond.popcorn.ui.theme.PopcornTheme
+import me.jaypatelbond.popcorn.ui.theme.TextSecondary
 
 /**
  * Main entry point of the Popcorn app.
- * Uses Hilt for dependency injection and Compose Navigation.
+ * Uses Hilt for dependency injection and Compose Navigation with bottom bar.
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
+
         setContent {
             PopcornTheme {
-                val navController = rememberNavController()
-                PopcornNavHost(navController = navController)
+                MainApp()
             }
+        }
+    }
+}
+
+@Composable
+fun MainApp() {
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+
+    // Determine if bottom bar should be shown (hide on detail screens)
+    val showBottomBar = currentDestination?.route in listOf(
+        Screen.Home.route,
+        Screen.Search.route,
+        Screen.Saved.route
+    )
+
+    Scaffold(
+        bottomBar = {
+            if (showBottomBar) {
+                BottomNavigationBar(
+                    currentRoute = currentDestination?.route,
+                    onItemClick = { route ->
+                        navController.navigate(route) {
+                            // Pop up to the start destination to avoid building a large back stack
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            // Avoid multiple copies of the same destination
+                            launchSingleTop = true
+                            // Restore state when reselecting a previously selected item
+                            restoreState = true
+                        }
+                    }
+                )
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        PopcornNavHost(
+            navController = navController,
+            modifier = Modifier.padding(paddingValues)
+        )
+    }
+}
+
+@Composable
+private fun BottomNavigationBar(
+    currentRoute: String?,
+    onItemClick: (String) -> Unit
+) {
+    NavigationBar(
+        containerColor = BackgroundBottomBar,
+        contentColor = Color.White
+    ) {
+        bottomNavItems.forEach { item ->
+            val selected = currentRoute == item.route
+
+            NavigationBarItem(
+                selected = selected,
+                onClick = { onItemClick(item.route) },
+                icon = {
+                    Icon(
+                        imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                        contentDescription = item.title
+                    )
+                },
+                label = {
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = NetflixRed,
+                    selectedTextColor = NetflixRed,
+                    unselectedIconColor = TextSecondary,
+                    unselectedTextColor = TextSecondary,
+                    indicatorColor = Color.Transparent
+                )
+            )
         }
     }
 }

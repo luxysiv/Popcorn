@@ -130,3 +130,6 @@ obj/
 # Test output
 test-results/
 connected/
+/.idea/runConfigurations.xml
+/.idea/copilot.data.migration.ask2agent.xml
+/.idea/AndroidProjectSystem.xml
