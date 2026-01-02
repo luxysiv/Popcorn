@@ -12,8 +12,10 @@ A feature-rich Android movie discovery app built with modern Android development
 - **🎬 Now Playing** - See movies currently in theaters
 - **🔍 Search** - Search for any movie with debounced input
 - **🔖 Bookmarks** - Save your favorite movies locally
-- **📱 Offline Support** - Works without internet using cached data
+- **📱 Offline Support** - Works without internet using cached data with offline banners
+- **🛡️ Robust Error Handling** - Distinct states for network/server errors with retry mechanism
 - **🔗 Deep Links** - Share movies with friends via app links
+- **🎨 Polish** - Custom app icon, splash screen, and smooth animations
 - **🌙 Dark Theme** - Netflix-inspired premium dark UI
 
 ## 🏗️ Architecture
