@@ -5,7 +5,7 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # Chạy thủ công từ tab Actions
+  workflow_dispatch:
 
 jobs:
   build-and-sign:
@@ -16,7 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Setup JDK 17 (phù hợp với hầu hết project Android 2025-2026)
+      # 2. Setup JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -24,7 +24,7 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # 3. Cache Gradle dependencies (giảm thời gian build đáng kể)
+      # 3. Cache Gradle dependencies
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -38,11 +38,18 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # 5. Build release APK (unsigned) + hiển thị warning chi tiết
-      - name: Build Release APK (unsigned)
-        run: ./gradlew assembleRelease --stacktrace --warning-mode all
+      # 5. Clean project & Gradle cache (fix lỗi merge resources phổ biến)
+      - name: Clean build and cache
+        run: |
+          ./gradlew clean
+          rm -rf ~/.gradle/caches/transforms-*
+          rm -rf app/build/
 
-      # 6. Sign APK bằng key từ GitHub Secrets
+      # 6. Build release APK (unsigned) - tắt warning để log sạch
+      - name: Build Release APK (unsigned)
+        run: ./gradlew assembleRelease --stacktrace --warning-mode=none
+
+      # 7. Sign APK
       - name: Sign APK with release key
         id: sign_app
         uses: r0adkll/sign-android-release@v1
@@ -53,10 +60,10 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
         env:
-          BUILD_TOOLS_VERSION: "35.0.0"  # Cập nhật nếu cần version mới hơn
+          BUILD_TOOLS_VERSION: "35.0.0"
 
-      # 7. Upload signed APK (nếu sign thành công)
-      - name: Upload Signed APK Artifact
+      # 8. Upload signed APK (nếu sign thành công)
+      - name: Upload Signed APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
@@ -64,7 +71,7 @@ jobs:
           path: ${{ steps.sign_app.outputs.signedReleaseFile }}
           retention-days: 10
 
-      # 8. Upload unsigned APK (dự phòng, luôn có để debug)
+      # 9. Upload unsigned APK (luôn upload để debug)
       - name: Upload Unsigned APK (fallback)
         if: always()
         uses: actions/upload-artifact@v4
@@ -73,7 +80,16 @@ jobs:
           path: app/build/outputs/apk/release/app-release-unsigned.apk
           retention-days: 5
 
-      # 9. Tạo GitHub Release tự động khi push tag (ví dụ v1.0.0)
+      # 10. Upload problems report nếu build fail (xem chi tiết lỗi resource)
+      - name: Upload Problems Report (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: problems-report
+          path: build/reports/problems/problems-report.html
+          retention-days: 3
+
+      # 11. Tạo GitHub Release khi push tag
       - name: Create GitHub Release on Tag
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
