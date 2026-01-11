@@ -5,18 +5,18 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # Cho phép chạy thủ công từ tab Actions
+  workflow_dispatch:  # Chạy thủ công từ tab Actions
 
 jobs:
   build-and-sign:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout code
+      # 1. Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Setup Java 17 (Popcorn dùng JDK 17+)
+      # 2. Setup JDK 17 (phù hợp với hầu hết project Android 2025-2026)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -24,8 +24,8 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # Cache Gradle để build nhanh hơn lần sau
-      - name: Cache Gradle dependencies
+      # 3. Cache Gradle dependencies (giảm thời gian build đáng kể)
+      - name: Cache Gradle
         uses: actions/cache@v4
         with:
           path: |
@@ -34,15 +34,15 @@ jobs:
           key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: gradle-
 
-      # Grant quyền chạy gradlew
+      # 4. Grant quyền chạy gradlew
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # Build unsigned release APK
+      # 5. Build release APK (unsigned) + hiển thị warning chi tiết
       - name: Build Release APK (unsigned)
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease --stacktrace --warning-mode all
 
-      # Sign APK bằng key từ secrets
+      # 6. Sign APK bằng key từ GitHub Secrets
       - name: Sign APK with release key
         id: sign_app
         uses: r0adkll/sign-android-release@v1
@@ -53,28 +53,37 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
         env:
-          # Dùng build-tools mới nhất (cập nhật nếu cần)
-          BUILD_TOOLS_VERSION: "35.0.0"
+          BUILD_TOOLS_VERSION: "35.0.0"  # Cập nhật nếu cần version mới hơn
 
-      # Upload signed APK để tải về sau khi build xong
+      # 7. Upload signed APK (nếu sign thành công)
       - name: Upload Signed APK Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: Popcorn-signed-release-apk
           path: ${{ steps.sign_app.outputs.signedReleaseFile }}
           retention-days: 10
 
-      # (Tùy chọn) Tự động tạo GitHub Release khi push tag (v1.0.0, v2.1.3...)
+      # 8. Upload unsigned APK (dự phòng, luôn có để debug)
+      - name: Upload Unsigned APK (fallback)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Popcorn-unsigned-apk
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          retention-days: 5
+
+      # 9. Tạo GitHub Release tự động khi push tag (ví dụ v1.0.0)
       - name: Create GitHub Release on Tag
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ steps.sign_app.outputs.signedReleaseFile }}
           tag_name: ${{ github.ref_name }}
-          name: Popcorn Release ${{ github.ref_name }}
+          name: Popcorn ${{ github.ref_name }}
           body: |
-            Auto-built signed release APK from GitHub Actions
+            Auto-built signed release APK
             Commit: ${{ github.sha }}
-            Date: ${{ github.event.head_commit.timestamp }}
+            Built on: ${{ github.event.head_commit.timestamp }}
           draft: false
           prerelease: false
